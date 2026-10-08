@@ -56,3 +56,151 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+PHP >= 8.2
+Composer
+MySQL
+Git
+
+Clonar el repositorio
+git clone https://github.com/tu-usuario/taskflow_api.git
+
+Muévete al proyecto
+cd taskflow_api
+
+Instalar dependencias de PHP
+composer install
+
+Configurar el archivo de entorno
+Copia el archivo de ejemplo:
+cp .env.example .env
+
+Genera la clave de la aplicación:
+php artisan key:generate
+
+Configurar la base de datos
+Abra el archivo .env y edite estas líneas con sus datos de MySQL:
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=taskflow_db
+DB_USERNAME=root
+DB_PASSWORD=tu_contraseña
+
+Crea la base de datos en MySQL:
+CREATE DATABASE taskflow_db;
+
+Ejecutar migraciones y poblar la base de datos
+php artisan migrate:fresh --seed
+
+Esto crea todas las tablas necesarias y las llena con datos de prueba: usuarios con user_code, contactos aceptados, proyectos y tareas.
+
+Levantar el servidor
+php artisan serve
+
+La API quedará disponible en:
+http://127.0.0.1:8000
+
+Correr los tests
+El proyecto usa Pest como framework de testing. Para correr todos los tests:
+php artisan test
+
+Qué cubren los tests:
+tests/Feature/AuthTest.php
+Registro de usuario exitoso, generación automática de user_code y login con Sanctum.
+
+tests/Feature/ContactoTest.php
+Envío de solicitudes por user_code, aceptación de participantes y rechazo de duplicados.
+
+tests/Feature/ProyectoTest.php
+Creación de proyectos y adición de miembros (solo contactos aceptados).
+
+tests/Feature/TareaTest.php
+Asignación de tareas, cambio a estado review_pending, aprobación (completed) y rechazo devolviendo a in_progress.
+
+Probar los endpoints con curl
+
+Registrar un usuario:
+curl -X POST http://127.0.0.1:8000/api/registro \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"name":"Ian Karlhos","email":"ianks@gmail.com","password":"12345678"}'
+
+Iniciar sesión:
+curl -X POST http://127.0.0.1:8000/api/login \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"email":"ianks@gmail.com","password":"12345678"}'
+
+Copia el token y el user_code que devuelve la respuesta, lo vas a necesitar en las siguientes peticiones.
+
+Solicitar participante enviando su user_code:
+curl -X POST http://127.0.0.1:8000/api/contactos/solicitar \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TU_TOKEN" \
+  -d '{"user_code":"USR-8F32A"}'
+
+Ver solicitudes pendientes recibidas:
+curl -X GET http://127.0.0.1:8000/api/contactos/pendientes \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TU_TOKEN"
+
+Responder (Aceptar) solicitud de contacto:
+curl -X PATCH http://127.0.0.1:8000/api/contactos/1/responder \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TU_TOKEN" \
+  -d '{"status":"accepted"}'
+
+Listar tus contactos/participantes confirmados:
+curl -X GET http://127.0.0.1:8000/api/contactos \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TU_TOKEN"
+
+Crear un proyecto:
+curl -X POST http://127.0.0.1:8000/api/proyectos \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TU_TOKEN" \
+  -d '{"name":"Sistema E-Commerce","description":"Desarrollo de API backend","start_date":"2026-10-01","end_date":"2026-12-31"}'
+
+Agregar un miembro al proyecto (debe ser un contacto aceptado):
+curl -X POST http://127.0.0.1:8000/api/proyectos/1/agregar-miembro \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TU_TOKEN" \
+  -d '{"user_id":2}'
+
+Crear y asignar una tarea:
+curl -X POST http://127.0.0.1:8000/api/tareas \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TU_TOKEN" \
+  -d '{"title":"Migraciones BD","description":"Crear migraciones y modelos","project_id":1,"assigned_to":2,"due_date":"2026-10-15 18:00:00"}'
+
+Cambiar estado de tarea a "Revisión Pendiente" (review_pending):
+curl -X PATCH http://127.0.0.1:8000/api/tareas/1/cambiar-estado \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TOKEN_DESARROLLADOR" \
+  -d '{"status":"review_pending"}'
+
+Revisar tarea (Rechazar y devolver a in_progress):
+curl -X PATCH http://127.0.0.1:8000/api/tareas/1/revisar \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TOKEN_CREADOR" \
+  -d '{"aprobado":false,"rejection_reason":"Faltan claves foráneas en la tabla tareas."}'
+
+Revisar tarea (Aprobar y pasar a completed):
+curl -X PATCH http://127.0.0.1:8000/api/tareas/1/revisar \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TOKEN_CREADOR" \
+  -d '{"aprobado":true}'
+
+Cerrar sesión:
+curl -X POST http://127.0.0.1:8000/api/logout \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer TU_TOKEN"
