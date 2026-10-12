@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Contact;
 use App\Models\Project;
 use Illuminate\Http\Request;
 
@@ -53,6 +54,24 @@ class ProyectoController extends Controller
         $proyecto = Project::where('id', $proyectoId)
             ->where('owner_id', $request->user()->id)
             ->firstOrFail();
+
+        $esContactoAceptado = Contact::where('status', 'accepted')
+            ->where(function ($query) use ($request) {
+                $query->where(function ($query) use ($request) {
+                    $query
+                        ->where('user_id', $request->user()->id)
+                        ->where('contact_id', $request->user_id);
+                })->orWhere(function ($query) use ($request) {
+                    $query
+                        ->where('user_id', $request->user_id)
+                        ->where('contact_id', $request->user()->id);
+                });
+            })
+            ->exists();
+
+        if (!$esContactoAceptado) {
+            return response()->json(['mensaje' => 'El usuario debe ser un contacto aceptado'], 403);
+        }
 
         $proyecto->miembros()->syncWithoutDetaching([$request->user_id => ['role' => 'member']]);
 

@@ -63,47 +63,69 @@ MySQL
 Git
 
 Clonar el repositorio
+```bash
 git clone https://github.com/tu-usuario/taskflow_api.git
+```
 
 Muévete al proyecto
+```bash
 cd taskflow_api
+```
 
 Instalar dependencias de PHP
+```bash
 composer install
+```
 
 Configurar el archivo de entorno
 Copia el archivo de ejemplo:
+```bash
 cp .env.example .env
+```
 
 Genera la clave de la aplicación:
+```bash
 php artisan key:generate
+```
 
 Configurar la base de datos
 Abra el archivo .env y edite estas líneas con sus datos de MySQL:
+```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=taskflow_db
 DB_USERNAME=root
 DB_PASSWORD=tu_contraseña
+```
 
 Crea la base de datos en MySQL:
+```sql
 CREATE DATABASE taskflow_db;
+```
 
 Ejecutar migraciones y poblar la base de datos
+```bash
 php artisan migrate:fresh --seed
+```
 
 Esto crea todas las tablas necesarias y las llena con datos de prueba: usuarios con user_code, contactos aceptados, proyectos y tareas.
 
 Levantar el servidor
+```bash
 php artisan serve
+```
 
 La API quedará disponible en:
+```text
 http://127.0.0.1:8000
+```
 
 Correr los tests
 El proyecto usa Pest como framework de testing. Para correr todos los tests:
+```bash
 php artisan test
+```
 
 Qué cubren los tests:
 tests/Feature/AuthTest.php
@@ -121,86 +143,114 @@ Asignación de tareas, cambio a estado review_pending, aprobación (completed) y
 Probar los endpoints con curl
 
 Registrar un usuario:
+```bash
 curl -X POST http://127.0.0.1:8000/api/registro \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{"name":"Ian Karlhos","email":"ianks@gmail.com","password":"12345678"}'
+```
 
 Iniciar sesión:
+```bash
 curl -X POST http://127.0.0.1:8000/api/login \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{"email":"ianks@gmail.com","password":"12345678"}'
+```
 
 Copia el token y el user_code que devuelve la respuesta, lo vas a necesitar en las siguientes peticiones.
 
 Solicitar participante enviando su user_code:
+```bash
 curl -X POST http://127.0.0.1:8000/api/contactos/solicitar \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TU_TOKEN" \
   -d '{"user_code":"USR-8F32A"}'
+```
 
 Ver solicitudes pendientes recibidas:
+```bash
 curl -X GET http://127.0.0.1:8000/api/contactos/pendientes \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TU_TOKEN"
+```
 
 Responder (Aceptar) solicitud de contacto:
+```bash
 curl -X PATCH http://127.0.0.1:8000/api/contactos/1/responder \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TU_TOKEN" \
   -d '{"status":"accepted"}'
+```
 
 Listar tus contactos/participantes confirmados:
+```bash
 curl -X GET http://127.0.0.1:8000/api/contactos \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TU_TOKEN"
+```
 
 Crear un proyecto:
+```bash
 curl -X POST http://127.0.0.1:8000/api/proyectos \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TU_TOKEN" \
   -d '{"name":"Sistema E-Commerce","description":"Desarrollo de API backend","start_date":"2026-10-01","end_date":"2026-12-31"}'
+```
 
 Agregar un miembro al proyecto (debe ser un contacto aceptado):
+```bash
 curl -X POST http://127.0.0.1:8000/api/proyectos/1/agregar-miembro \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TU_TOKEN" \
   -d '{"user_id":2}'
+```
 
 Crear y asignar una tarea:
+```bash
 curl -X POST http://127.0.0.1:8000/api/tareas \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TU_TOKEN" \
   -d '{"title":"Migraciones BD","description":"Crear migraciones y modelos","project_id":1,"assigned_to":2,"due_date":"2026-10-15 18:00:00"}'
+```
 
 Cambiar estado de tarea a "Revisión Pendiente" (review_pending):
+```bash
 curl -X PATCH http://127.0.0.1:8000/api/tareas/1/cambiar-estado \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TOKEN_DESARROLLADOR" \
   -d '{"status":"review_pending"}'
+```
 
 Revisar tarea (Rechazar y devolver a in_progress):
+```bash
 curl -X PATCH http://127.0.0.1:8000/api/tareas/1/revisar \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TOKEN_CREADOR" \
   -d '{"aprobado":false,"rejection_reason":"Faltan claves foráneas en la tabla tareas."}'
 
+```
+
 Revisar tarea (Aprobar y pasar a completed):
+
+```bash
 curl -X PATCH http://127.0.0.1:8000/api/tareas/1/revisar \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TOKEN_CREADOR" \
   -d '{"aprobado":true}'
+```
 
 Cerrar sesión:
+```bash
 curl -X POST http://127.0.0.1:8000/api/logout \
   -H "Accept: application/json" \
   -H "Authorization: Bearer TU_TOKEN"
+```
