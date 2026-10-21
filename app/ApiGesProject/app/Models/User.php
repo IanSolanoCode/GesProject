@@ -2,10 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -13,42 +9,63 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'code'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * Generate the unique invitation code when the user does not provide one.
-     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'code',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    // Genera un código único de 10 caracteres al crear el usuario
     protected static function booted(): void
     {
-        static::creating(function (self $user): void {
-            if (blank($user->code)) {
-                $user->code = static::generateUniqueCode();
+        static::creating(function ($user) {
+            if (empty($user->code)) {
+                do {
+                    $code = strtoupper(Str::random(10));
+                } while (DB::table('users')->where('code', $code)->exists());
+
+                $user->code = $code;
             }
         });
     }
 
-    /**
-     * Generate a unique 10 character code (A-Z and 0-9).
-     */
-    protected static function generateUniqueCode(): string
+    // Proyectos creados por este usuario (como dueño)
+    public function ownedProjects()
     {
-        do {
-            $code = Str::upper(Str::random(10));
-        } while (DB::table('users')->where('code', $code)->exists());
-
-        return $code;
+        return $this->hasMany(Project::class, 'user_id');
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    // Proyectos en los que participa como colaborador/miembro
+    public function memberProjects()
+    {
+        return $this->belongsToMany(Project::class, 'project_members', 'user_id', 'project_id')
+                    ->withTimestamps();
+    }
+
+    // Miembros/Contactos agregados a la lista de equipo de este usuario
+    public function teamMembers()
+    {
+        return $this->belongsToMany(User::class, 'team_members', 'user_id', 'member_id')
+                    ->withTimestamps();
+    }
+
+    // Tareas asignadas a este usuario
+    public function assignedTasks()
+    {
+        return $this->hasMany(Task::class, 'assigned_to');
+    }
+
+    // Atributos convertidos
     protected function casts(): array
     {
         return [
